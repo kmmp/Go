@@ -1,4 +1,4 @@
-package zusWSDL
+package zus_channel_zla_binder
 
 import (
 	"reflect"
