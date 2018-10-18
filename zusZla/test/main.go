@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,12 +9,14 @@ import (
 func main() {
 	client := &http.Client{}
 
-	body := []byte("{\n  \"title\": \"Buy cheese and bread for breakfast.\"\n}")
+	//body := []byte("{\n  \"title\": \"Buy cheese and bread for breakfast.\"\n}")
 
-	req, _ := http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", nil)
+	req.SetBasicAuth("ezla_ag", "ezla_ag")
 
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("SOAPAction", "pobierzDokument")
+	req.Header.Add("Content-Type", "text/xml;charset=UTF-8")
+	req.Header.Add("SOAPAction", "pobierzOswiadczenie")
+	fmt.Println(req)
 	resp, err := client.Do(req)
 
 	if err != nil {

@@ -62,6 +62,7 @@ func zusPobierzOswiadczenie() {
 	addr := "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla"
 	//client := &http.Client{}
 	cli := soap.Client{URL: addr}
+	
 
 	//body := []byte("{\n  \"title\": \"Buy cheese and bread for breakfast.\"\n}")
 
