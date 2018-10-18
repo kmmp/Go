@@ -1,0 +1,19 @@
+sudo: false
+
+language: go
+
+install:
+  - go get -u github.com/golang/lint/golint
+
+before_script:
+  - go vet ./...
+  - golint ./...
+
+go:
+  - 1.7
+  - 1.8
+  - 1.9
+  - tip
+
+script:
+  - go test -v -race ./...
