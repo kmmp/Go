@@ -43,7 +43,7 @@ func main() {
 		return
 	}
 
-	// FIXME: encoding
+	
 	client := http.Client{}
 	req, err := http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", buffer)
 	if err != nil {
@@ -65,8 +65,7 @@ func main() {
 	if resp.StatusCode != 200 {
 		println("Error:", resp.Status)
 	}
-	// FIXME: check Content-Type
-	// FIXME: encoding
+	
 
 	// responseEnvelope := SoapEnvelope{}
 	bodyElement, err := DecodeResponseBody(resp.Body)
@@ -81,9 +80,7 @@ func main() {
 		return
 	}
 
-	/*for _, project := range bodyElement.GetAllProjectsResult.ProjectReference1 {
-		println("Project:", *project.Slug, *project.Uri, *project.DisplayText)
-	}*/
+	
 }
 
 func DecodeResponseBody(body io.Reader) (*zus.PobierzOswiadczenieResponse, error) {
