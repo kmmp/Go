@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	//wsdl "zus_channel_zla_binder"
 )
 
 func main() {

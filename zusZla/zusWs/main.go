@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	zusWSDL "zus_channel_zla_binder"
+	zus "zus_channel_zla_binder"
 
 	"github.com/fiorix/wsdl2go/soap"
 )
@@ -49,47 +49,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		zusPobierzOswiadczenie()
 	case "podpiszDokument":
 		zusPodpiszDokument()
-	default:
-		// freebsd, openbsd,
-		// plan9, windows...
-		fmt.Println("Missing method!")
 	}
 
 }
 
 func zusPobierzOswiadczenie() {
+	client := soap.Client{
+		URL: "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla"}
 
-	addr := "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla"
-	//client := &http.Client{}
-	cli := soap.Client{URL: addr}
-	
-
-	//body := []byte("{\n  \"title\": \"Buy cheese and bread for breakfast.\"\n}")
-
-	//req, _ := http.NewRequest("POST", addr, bytes.NewBuffer(body))
-	//req, _ := http.NewRequest("POST", addr, nil)
-
-	//req.Header.Add("Content-Type", "application/json")
-	zusClient := zusWSDL.NewZla_PortType(&cli)
-	//fmt.Println(dupa)
-	var b zusWSDL.PobierzOswiadczenie
-	resp, err := zusClient.PobierzOswiadczenie(&b)
-	if err != nil {
-		fmt.Printf("Błąd: %s", err)
-	}
-	fmt.Println(resp)
-	/*resp, err := client.Do(req)
-
-	if err != nil {
-		fmt.Println("Errored when sending request to the server")
-		return
-	}
-
-	defer resp.Body.Close()
-	respBody, _ := ioutil.ReadAll(resp.Body)
-
-	fmt.Println(resp.Status)
-	fmt.Println(string(respBody))*/
+	fmt.Println(zus.NewZla_PortType(&client).PobierzOswiadczenie(&zus.PobierzOswiadczenie{}))
 }
 
 func zusPodpiszDokument() {
