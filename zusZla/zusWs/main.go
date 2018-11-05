@@ -1,18 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
-
-	"../zusWSDL"
+	"net/http"
 )
 
-func main() {
-	con := zusWSDL.PobierzPlatnikowUbezpieczonego(zusWSDL.PobierzPlatnikowUbezpieczonego{IdSesji: nil, Ubezpieczony: nil})
-
-	log.Println(con)
+func viewHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.Body)
 }
 
-/*Oryginal *DocTypeRef_Dokument `xml:"Oryginal,omitempty" json:"Oryginal,omitempty" yaml:"Oryginal,omitempty"`
-Kopia    *DocTypeRef_Dokument `xml:"Kopia,omitempty" json:"Kopia,omitempty" yaml:"Kopia,omitempty"`
-NrRef    Inne                 `xml:"NrRef,attr,omitempty" json:"NrRef,attr,omitempty" yaml:"NrRef,attr,omitempty"`
-*/
+func main() {
+	http.HandleFunc("/", viewHandler)
+	log.Fatal(http.ListenAndServe(":8000", nil))
+}
