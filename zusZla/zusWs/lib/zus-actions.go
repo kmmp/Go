@@ -1,24 +1,15 @@
-package main
+package lib
 
 import (
 	"bytes"
 	"encoding/xml"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"net/http"
-
-	zus "../zus_channel_zla_binder"
-	//"github.com/fiorix/wsdl2go/soap"
 )
 
-var metoda123 zus.MetodaUwierzytelnienia
-
-type ZalogujPodpisem struct {
-	PodpisaneOswiadczenie string `xml:"PodpisaneOswiadczenie"`
-	MetodaWeryfikacji     string `xml:"MetodaWeryfikacji,omitempty"`
-}
+var username, password string = "ezla_ag", "ezla_ag"
 
 type PodpisaneOswiadczenie struct {
 	Oswiadczenie OswiadczenieResponse `xml:"Oswiadczenie"`
@@ -46,61 +37,47 @@ func CreateSoapEnvelope() *SoapEnvelope {
 	return retval
 }
 
-func main() {
-	var username = flag.String("username", "ezla_ag", "HTTP basic auth username")
-	var password = flag.String("password", "ezla_ag", "HTTP basic auth password")
-	flag.Parse()
+func GetOswiadczenie() *PobierzOswiadczenieResponse {
 
 	buffer := &bytes.Buffer{}
 	requestEnvelope := CreateSoapEnvelope()
-	///requestEnvelope.Body.Body = zus.PobierzOswiadczenie{}
 	encoder := xml.NewEncoder(buffer)
 	err := encoder.Encode(requestEnvelope)
 	if err != nil {
 		println("Error encoding document:", err.Error())
-		return
+		return nil
 	}
 
 	client := http.Client{}
-	req, err := http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", buffer)
-	if err != nil {
-		println("Error creating HTTP request:", err.Error())
-		return
-	}
-	if username != nil && password != nil && *username != "" && *password != "" {
-		println("Autheticating")
-		req.SetBasicAuth(*username, *password)
-	}
-	req.Header.Add("SOAPAction", "zus_channel_zla_Binder_pobierzOswiadczenie")
-	req.Header.Add("Content-Type", "text/xml")
+	req := getReq("zus_channel_zla_Binder_pobierzOswiadczenie", buffer)
 	resp, err := client.Do(req)
 	if err != nil {
 		println("Error POSTing HTTP request:", err.Error())
-		return
+		return nil
 	}
 	if resp.StatusCode != 200 {
 		println("Error:", resp.Status)
 	}
 
-	// responseEnvelope := SoapEnvelope{}
-	bodyElement, err := DecodeResponseBody(resp.Body)
+	bodyElement, err := decodeResponseBody(resp.Body)
 	if err != nil {
 		println("Error decoding body:", err.Error())
-		return
+		return nil
 	}
 	println("Decoded body!")
-	data := &OswiadczenieResponse{}
-	xml.Unmarshal([]byte(*bodyElement.Oswiadczenie), &data)
-	//fmt.Println("Token: ", *data.Token)
 
 	if bodyElement.Oswiadczenie == nil {
 		println("Oswiadczenie is nil")
-		return
+		return nil
 	}
-	//////////////////////////////////////
-	clientPodpis := http.Client{}
-	buffer = &bytes.Buffer{}
-	requestEnvelope = CreateSoapEnvelope()
+
+	return bodyElement
+}
+
+func getSession(po *PobierzOswiadczenieResponse) *ZalogujPodpisemResponse {
+
+	data := &OswiadczenieResponse{}
+	xml.Unmarshal([]byte(*po.Oswiadczenie), &data)
 
 	v := PodpisaneOswiadczenie{
 		Oswiadczenie: OswiadczenieResponse{
@@ -117,60 +94,60 @@ func main() {
 		fmt.Printf("error: %v\n", err)
 	}
 	send := string(output[:])
-	metoda123 = "certyfikat"
-	podpisaneOswiadczenie := zus.ZalogujPodpisem{
+	var auth MetodaUwierzytelnienia = "certyfikat"
+	podpisaneOswiadczenie := ZalogujPodpisem{
 		PodpisaneOswiadczenie: &send,
-		MetodaWeryfikacji:     &metoda123,
+		MetodaWeryfikacji:     &auth,
 	}
-	//fmt.Printf("Output: %s", output)
+
+	client := http.Client{}
+	buffer := &bytes.Buffer{}
+	requestEnvelope := CreateSoapEnvelope()
 	requestEnvelope.Body.Body = podpisaneOswiadczenie
-	encoder = xml.NewEncoder(buffer)
+	encoder := xml.NewEncoder(buffer)
 	err = encoder.Encode(requestEnvelope)
 	if err != nil {
 		println("Error encoding document:", err.Error())
-		return
+		return nil
 	}
 
-	req, err = http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", buffer)
+	req, err := http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", buffer)
 	if err != nil {
 		println("Error creating HTTP request:", err.Error())
-		return
+		return nil
 	}
-	if username != nil && password != nil && *username != "" && *password != "" {
+	if username != "" && password != "" {
 		println("Autheticating")
-		req.SetBasicAuth(*username, *password)
+		req.SetBasicAuth(username, password)
 	}
 	req.Header.Add("SOAPAction", "zus_channel_zla_Binder_zalogujPodpisem")
 	req.Header.Add("Content-Type", "text/xml")
 
-	resp, err = clientPodpis.Do(req)
+	resp, err := client.Do(req)
 	fmt.Println("REQ: ", req)
 	if err != nil {
 		println("Error POSTing HTTP request:", err.Error())
-		return
+		return nil
 	}
 	if resp.StatusCode != 200 {
 		println("Error:", resp.Status)
 	}
 
-	// responseEnvelope := SoapEnvelope{}
-	bodyElement2, err := DecodeResponseZaloguj(resp.Body)
+	bodyElement, err := decodeResponseZaloguj(resp.Body)
 	if err != nil {
 		println("Error decoding body:", err.Error())
-		return
+		return nil
 	}
 	println("Decoded body!")
-	//data2 := zus.ZalogujPodpisemResponse{}
-	//xml.Unmarshal([]byte(&bodyElement2), &data2)
-	//fmt.Println("Sesja: ", *data2.IdSesji)
 
-	if bodyElement2.IdSesji == nil {
-		println("Oswiadczenie is nil")
-		return
+	if bodyElement.IdSesji == nil {
+		println("Id sesji is nil")
+		return nil
 	}
+	return bodyElement
 }
 
-func DecodeResponseBody(body io.Reader) (*zus.PobierzOswiadczenieResponse, error) {
+func decodeResponseBody(body io.Reader) (*PobierzOswiadczenieResponse, error) {
 	decoder := xml.NewDecoder(body)
 	nextElementIsBody := false
 	for {
@@ -184,7 +161,7 @@ func DecodeResponseBody(body io.Reader) (*zus.PobierzOswiadczenieResponse, error
 		case xml.StartElement:
 			if nextElementIsBody {
 				fmt.Println("Jestem w body")
-				responseBody := zus.PobierzOswiadczenieResponse{}
+				responseBody := PobierzOswiadczenieResponse{}
 				err = decoder.DecodeElement(&responseBody, &startElement)
 				if err != nil {
 					return nil, err
@@ -200,7 +177,7 @@ func DecodeResponseBody(body io.Reader) (*zus.PobierzOswiadczenieResponse, error
 	return nil, errors.New("Did not find SOAP body element")
 }
 
-func DecodeResponseZaloguj(body io.Reader) (*zus.ZalogujPodpisemResponse, error) {
+func decodeResponseZaloguj(body io.Reader) (*ZalogujPodpisemResponse, error) {
 	decoder := xml.NewDecoder(body)
 	nextElementIsBody := false
 	for {
@@ -214,7 +191,7 @@ func DecodeResponseZaloguj(body io.Reader) (*zus.ZalogujPodpisemResponse, error)
 		case xml.StartElement:
 			if nextElementIsBody {
 				fmt.Println("Jestem w body logowania")
-				responseBody := zus.ZalogujPodpisemResponse{}
+				responseBody := ZalogujPodpisemResponse{}
 				err = decoder.DecodeElement(&responseBody, &startElement)
 				if err != nil {
 					return nil, err
@@ -229,4 +206,20 @@ func DecodeResponseZaloguj(body io.Reader) (*zus.ZalogujPodpisemResponse, error)
 	}
 
 	return nil, errors.New("Did not find SOAP body element")
+}
+
+func getReq(soapAction string, buffer *bytes.Buffer) *http.Request {
+	req, err := http.NewRequest("POST", "https://pue.zus.pl:8001/ws/zus.channel.gabinetowe:zla", buffer)
+	if err != nil {
+		println("Error creating HTTP request:", err.Error())
+		return nil
+	}
+	if username != "" && password != "" {
+		println("Autheticating")
+		req.SetBasicAuth(username, password)
+	}
+	req.Header.Add("SOAPAction", soapAction)
+	req.Header.Add("Content-Type", "text/xml")
+
+	return req
 }
